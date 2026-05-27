@@ -1,0 +1,34 @@
+-- Active: 1774975794986@@127.0.0.1@5432@auditoria_da_helo_TRIGGERS
+-- EXERCICIO DA APOSTILA DE EXERCÍCIOS 14
+
+/*1.1 Adicione uma coluna à tabela tb_pessoa chamada ativo. Ela indica se a pessoa está
+ativa no sistema ou não. Ela deve ser capaz de armazenar um valor booleano. Por padrão,
+toda pessoa cadastrada no sistema está ativa.*/
+ALTER TABLE IF EXISTS tb_pessoa
+ADD COLUMN ativo BOOLEAN NOT NULL DEFAULT TRUE;
+
+/*1.2 Associe um trigger de DELETE à tabela. Quando um DELETE for executado, o trigger
+deve atribuir FALSE à coluna ativo das linhas envolvidas. Além disso, o trigger não deve
+permitir que nenhuma pessoa seja removida*/
+
+CREATE OR REPLACE FUNCTION fn_deletando_pessoa()
+RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+    BEGIN
+        UPDATE tb_pessoa SET ativo = false
+        WHERE cod_pessoa = OLD.cod_pessoa; --por usarmos DELETE, precisamos usar OLD
+        RAISE NOTICE 'Pessoa desativada';
+        RETURN NULL; -- CANCELA  operação de DELETE e só atualiza ativo = false
+    END;
+$$;
+
+CREATE OR REPLACE TRIGGER tg_deletar_pessoa
+BEFORE DELETE ON tb_pessoa
+FOR EACH ROW
+    EXECUTE PROCEDURE fn_deletando_pessoa();
+
+-- teste do cod_pessoa 1
+
+DELETE FROM tb_pessoa WHERE cod_pessoa = 3;
+
+SELECT * FROM tb_pessoa;
